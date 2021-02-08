@@ -7,6 +7,6 @@ RUN go get github.com/lib/pq
 ADD . /go/src/app
 WORKDIR /go/src/app
 
-EXPOSE 80
+EXPOSE 8080
 
 CMD ["go","run","main.go"]
