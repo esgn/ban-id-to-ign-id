@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -26,18 +25,17 @@ const (
 
 func BanToIgn(w http.ResponseWriter, r *http.Request) {
 
-	db := OpenConnection()
-
 	idban := strings.TrimPrefix(r.URL.Path, "/position/")
 
 	// Conversion cle_interop BAL1.2 vers cle_interop IGN
 	idbanTokens := strings.Split(idban, "_")
 	if len(idbanTokens) < 3 {
-		w.Header().Set("Content-Type", "text/html")
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusNotFound)
 		fmt.Fprintf(w, "Clé interop invalide")
 		return
 	}
+
 	n, err := strconv.Atoi(idbanTokens[2])
 	if err != nil {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -45,12 +43,11 @@ func BanToIgn(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Le troisième élément de la clé interop ne doit contenir que des chiffres")
 		return
 	}
+
+	db := OpenConnection()
+
 	idbanTokens[2] = strconv.Itoa(n)
 	idban = strings.Join(idbanTokens, "_")
-
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	query := `SELECT json_build_object(
 		'type', 'FeatureCollection',
@@ -66,7 +63,6 @@ func BanToIgn(w http.ResponseWriter, r *http.Request) {
 				'id',        id_ban_position,
 				'geometry',   ST_AsGeoJSON(geom)::json,
 				'properties', json_build_object(
-					-- list of fields
 					'id_ban_position', id_ban_position,
 					'id_ban_adresse', id_ban_adresse,
 					'id_ign', id_ign,
@@ -101,11 +97,12 @@ func BanToIgn(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusBadGateway)
-		fmt.Fprintf(w, "Erreur lors de l'interrogation de la base")
+		fmt.Fprintf(w, "Erreur lors de l'interrogation de la base de données")
+		defer db.Close()
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Write([]byte(result))
 
 	defer db.Close()
