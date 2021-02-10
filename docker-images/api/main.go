@@ -88,7 +88,7 @@ func BanToIgn(w http.ResponseWriter, r *http.Request) {
 	)
 	FROM (SELECT b.*,h.id_ign FROM ban_ign.ban b, 
 	ban_ign.housenumber_id_ign h 
-	WHERE cle_interop=$1 
+	WHERE LOWER(cle_interop)=LOWER($1) 
 	AND h.id_ban_adresse=b.id_ban_adresse) as f;`
 
 	var result string
