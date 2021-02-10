@@ -11,7 +11,7 @@ services:
                 postgis_version: 3
         environment:
             - POSTGRES_USER=adr
-            - POSTGRES_PASSWORD=adr
+            - POSTGRES_PASSWORD=$PASSWORD
         volumes:
             - postgis-data:/var/lib/postgresql/data
             - ./scripts:/tmp/scripts

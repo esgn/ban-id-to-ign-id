@@ -19,7 +19,7 @@ const (
 	host     = "adr-postgis"
 	port     = 5432
 	user     = "adr"
-	password = "adr"
+	password = "$PASSWORD"
 	dbname   = "adr"
 )
 

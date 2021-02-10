@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export PGPASSWORD="adr"
+export PGPASSWORD="$PASSWORD"
 
 psql -U adr -c "DROP SCHEMA IF EXISTS ban_ign CASCADE;"
 
