@@ -7,12 +7,12 @@ psql -U adr -c "DROP SCHEMA IF EXISTS ban_ign CASCADE;"
 psql -U adr < /tmp/scripts/create_schemas_tables.sql
 
 for f in /tmp/housenumber-id-ign/*.csv.gz; do
-    echo "[ban] integrating $f"
+    echo "[housenumber_id_ign] integrating $f"
     psql -U adr -c "COPY ban_ign.housenumber_id_ign FROM PROGRAM 'gzip -dc $f' DELIMITER ';' CSV HEADER"
 done
 
 for f in /tmp/ban/*.csv.gz; do
-    echo "[housenumber_id_ign] integrating $f"
+    echo "[ban] integrating $f"
     psql -U adr -c "COPY ban_ign.ban FROM PROGRAM 'gzip -dc $f' DELIMITER ';' CSV HEADER"
 done
 
