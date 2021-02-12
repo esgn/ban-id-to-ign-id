@@ -1,53 +1,113 @@
 package main
 
 import (
-	"database/sql"
+	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
 
+	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
 
 func main() {
 	http.HandleFunc("/position/", BanToIgn)
-	http.ListenAndServe(":8080", nil)
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
 const (
-	host     = "adr-postgis"
-	port     = 5432
-	user     = "adr"
-	password = "$PASSWORD"
-	dbname   = "adr"
+	host          = "127.0.0.1"
+	port          = 5432
+	user          = "adr"
+	password      = "adr"
+	dbname        = "adr"
+	max_ids       = 3
+	error_message = `{"error":{"message":"%s"}}`
 )
+
+func OpenConnection() *sqlx.DB {
+
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		host, port, user, password, dbname)
+
+	db, err := sqlx.Open("postgres", psqlInfo)
+	if err != nil {
+		panic(err)
+	}
+
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	return db
+}
+
+func HandlePath(idsBan string) ([]string, error) {
+
+	// Suppression espaces éventuels
+	idsBan = strings.TrimSpace(idsBan)
+
+	// Suppression virgule parasite
+	idsBan = strings.TrimSuffix(idsBan, ",")
+
+	// Passage en minuscule
+	idsBan = strings.ToLower(idsBan)
+
+	// Découpage de la chaine suivant les virgules
+	idsBanArray := strings.Split(idsBan, ",")
+
+	// Vérification de la taille de la liste
+	l := len(idsBanArray)
+	if l > max_ids {
+		return nil, errors.New("Liste d'identifiant dépassant la limite de " + strconv.Itoa(max_ids))
+	}
+
+	for i := 0; i < l; i++ {
+
+		idBan := idsBanArray[i]
+		idBan = strings.TrimSpace(idBan)
+
+		idBanTokens := strings.Split(idBan, "_")
+
+		if (len(idBan)) < 3 {
+			return nil, errors.New(idBan + " est un identifiant invalide")
+		}
+
+		n, err := strconv.Atoi(idBanTokens[2])
+		if err != nil {
+			return nil, errors.New(idBan + " est un identifiant invalide")
+		}
+
+		idBanTokens[2] = strconv.Itoa(n)
+
+		idBan = strings.Join(idBanTokens, "_")
+
+		idsBanArray[i] = idBan
+	}
+
+	return idsBanArray, nil
+
+}
 
 func BanToIgn(w http.ResponseWriter, r *http.Request) {
 
-	idban := strings.TrimPrefix(r.URL.Path, "/position/")
+	idsBan := strings.TrimPrefix(r.URL.Path, "/position/")
 
-	// Conversion cle_interop BAL1.2 vers cle_interop IGN
-	idbanTokens := strings.Split(idban, "_")
-	if len(idbanTokens) < 3 {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.WriteHeader(http.StatusNotFound)
-		fmt.Fprintf(w, "Clé interop invalide")
-		return
-	}
+	idsBanArray, err := HandlePath(idsBan)
 
-	n, err := strconv.Atoi(idbanTokens[2])
 	if err != nil {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(http.StatusNotFound)
-		fmt.Fprintf(w, "Le troisième élément de la clé interop ne doit contenir que des chiffres")
+		message := fmt.Sprintf(error_message, err)
+		fmt.Fprintf(w, message)
 		return
 	}
 
 	db := OpenConnection()
-
-	idbanTokens[2] = strconv.Itoa(n)
-	idban = strings.Join(idbanTokens, "_")
 
 	query := `SELECT json_build_object(
 		'type', 'FeatureCollection',
@@ -88,16 +148,19 @@ func BanToIgn(w http.ResponseWriter, r *http.Request) {
 	)
 	FROM (SELECT b.*,h.id_ign FROM ban_ign.ban b, 
 	ban_ign.housenumber_id_ign h 
-	WHERE LOWER(cle_interop)=LOWER($1) 
+	WHERE LOWER(cle_interop) IN (?)
 	AND h.id_ban_adresse=b.id_ban_adresse) as f;`
 
 	var result string
-	err = db.QueryRow(query, idban).Scan(&result)
+	q, args, err := sqlx.In(query, idsBanArray)
+	q = db.Rebind(q)
+	err = db.QueryRow(q, args...).Scan(&result)
 
 	if err != nil {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(http.StatusBadGateway)
-		fmt.Fprintf(w, "Erreur lors de l'interrogation de la base de données")
+		message := fmt.Sprintf(error_message, err)
+		fmt.Fprintf(w, message)
 		defer db.Close()
 		return
 	}
@@ -107,22 +170,4 @@ func BanToIgn(w http.ResponseWriter, r *http.Request) {
 
 	defer db.Close()
 
-}
-
-func OpenConnection() *sql.DB {
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
-		"password=%s dbname=%s sslmode=disable",
-		host, port, user, password, dbname)
-
-	db, err := sql.Open("postgres", psqlInfo)
-	if err != nil {
-		panic(err)
-	}
-
-	err = db.Ping()
-	if err != nil {
-		panic(err)
-	}
-
-	return db
 }

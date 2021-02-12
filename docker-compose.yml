@@ -11,20 +11,23 @@ services:
                 postgis_version: 3
         environment:
             - POSTGRES_USER=adr
-            - POSTGRES_PASSWORD=$PASSWORD
+            - POSTGRES_PASSWORD=adr
+        #ports:
+        #  - "5432:5432"
         volumes:
             - postgis-data:/var/lib/postgresql/data
             - ./scripts:/tmp/scripts
             - ./housenumber-id-ign:/tmp/housenumber-id-ign
             - ./ban:/tmp/ban
         restart: always
+        #command: ["postgres", "-c", "log_statement=all"]
         shm_size: 2g
 
     adr-adminer:
         container_name: adr-adminer
         image: adminer
         ports:
-          - "8080:8080"
+          - "8181:8080"
         environment: 
           - ADMINER_DEFAULT_SERVER=adr-postgis
           - ADMINER_DESIGN=hydra
