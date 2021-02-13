@@ -18,13 +18,13 @@ func main() {
 }
 
 const (
-	host          = "127.0.0.1"
-	port          = 5432
-	user          = "adr"
-	password      = "adr"
-	dbname        = "adr"
-	max_ids       = 3
-	error_message = `{"error":{"message":"%s"}}`
+	host         = "adr-postgis"
+	port         = 5432
+	user         = "adr"
+	password     = "adr"
+	dbname       = "adr"
+	maxIds       = 500
+	errorMessage = `{"error":{"message":"%s"}}`
 )
 
 func OpenConnection() *sqlx.DB {
@@ -46,13 +46,17 @@ func OpenConnection() *sqlx.DB {
 	return db
 }
 
+func deleteEmpty(s []string) []string {
+	var r []string
+	for _, str := range s {
+		if strings.TrimSpace(str) != "" {
+			r = append(r, str)
+		}
+	}
+	return r
+}
+
 func HandlePath(idsBan string) ([]string, error) {
-
-	// Suppression espaces éventuels
-	idsBan = strings.TrimSpace(idsBan)
-
-	// Suppression virgule parasite
-	idsBan = strings.TrimSuffix(idsBan, ",")
 
 	// Passage en minuscule
 	idsBan = strings.ToLower(idsBan)
@@ -60,26 +64,31 @@ func HandlePath(idsBan string) ([]string, error) {
 	// Découpage de la chaine suivant les virgules
 	idsBanArray := strings.Split(idsBan, ",")
 
+	// Suppression des chaines de caractères vides
+	idsBanArray = deleteEmpty(idsBanArray)
+
 	// Vérification de la taille de la liste
 	l := len(idsBanArray)
-	if l > max_ids {
-		return nil, errors.New("Liste d'identifiant dépassant la limite de " + strconv.Itoa(max_ids))
+	if l > maxIds {
+		return nil, errors.New("Liste de cle_interop dépassant la limite de " + strconv.Itoa(maxIds))
+	}
+	if l == 0 {
+		return nil, errors.New("Veuillez indiquer au moins une cle_interop")
 	}
 
 	for i := 0; i < l; i++ {
 
 		idBan := idsBanArray[i]
 		idBan = strings.TrimSpace(idBan)
-
 		idBanTokens := strings.Split(idBan, "_")
 
-		if (len(idBan)) < 3 {
-			return nil, errors.New(idBan + " est un identifiant invalide")
+		if (len(idBanTokens)) < 3 {
+			return nil, errors.New(idBan + " est une cle_interop invalide")
 		}
 
 		n, err := strconv.Atoi(idBanTokens[2])
 		if err != nil {
-			return nil, errors.New(idBan + " est un identifiant invalide")
+			return nil, errors.New(idBan + " est une cle_interop invalide")
 		}
 
 		idBanTokens[2] = strconv.Itoa(n)
@@ -102,7 +111,7 @@ func BanToIgn(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(http.StatusNotFound)
-		message := fmt.Sprintf(error_message, err)
+		message := fmt.Sprintf(errorMessage, err)
 		fmt.Fprintf(w, message)
 		return
 	}
@@ -146,10 +155,8 @@ func BanToIgn(w http.ResponseWriter, r *http.Request) {
 			)
 		)
 	)
-	FROM (SELECT b.*,h.id_ign FROM ban_ign.ban b, 
-	ban_ign.housenumber_id_ign h 
-	WHERE LOWER(cle_interop) IN (?)
-	AND h.id_ban_adresse=b.id_ban_adresse) as f;`
+	FROM (SELECT * FROM ban_ign.ban
+	WHERE lower(cle_interop) IN (?)) as f`
 
 	var result string
 	q, args, err := sqlx.In(query, idsBanArray)
@@ -159,7 +166,7 @@ func BanToIgn(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(http.StatusBadGateway)
-		message := fmt.Sprintf(error_message, err)
+		message := fmt.Sprintf(errorMessage, err)
 		fmt.Fprintf(w, message)
 		defer db.Close()
 		return
