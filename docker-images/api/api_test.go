@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 )
 
@@ -66,8 +67,8 @@ func TestCommas(t *testing.T) {
 func TestTooManyCleInterop(t *testing.T) {
 
 	path := ""
-	for i := 0; i < 501; i++ {
-		path += "i" + ","
+	for i := 0; i < (maxIds + 1); i++ {
+		path += strconv.Itoa(i) + ","
 	}
 
 	req, err := http.NewRequest("GET", path, nil)
@@ -81,7 +82,7 @@ func TestTooManyCleInterop(t *testing.T) {
 		t.Errorf("Statut HTTP invalide: attendu %v obtenu %v",
 			status, http.StatusNotFound)
 	}
-	expected := `{"error":{"message":"Liste de cle_interop dépassant la limite de 500"}}`
+	expected := `{"error":{"message":"Liste de cle_interop dépassant la limite de ` + strconv.Itoa(maxIds) + `"}}`
 	if rr.Body.String() != expected {
 		t.Errorf("Réponse invalide : attendu %v obtenu %v",
 			rr.Body.String(), expected)
