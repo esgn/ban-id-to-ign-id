@@ -64,3 +64,8 @@ Commencer par éteindre et supprimer le contenu de la base de donnée via la com
 ```
 
 Répéter les opérations ci-dessus pour reconstruire la base de données.
+
+## TODO
+
+- [ ] Mettre à jour le format du GeoJSON avec la RFC 7946
+- [ ] Rajouter autres opérations
