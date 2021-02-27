@@ -18,7 +18,8 @@ def download_url(url):
     out_file = os.path.join(out_dir, filename)
 
     r = requests.get(url, stream=True)
-    if r.status_code == requests.codes.ok:
+    if r.status_code == requests.codes.ok: #pylint: disable=no-member
+
         with open(out_file, 'wb') as f:
             for data in r:
                 f.write(data)
@@ -40,7 +41,7 @@ if os.path.exists(out_dir):
 
 os.mkdir(out_dir)
 
-results = ThreadPool(3).imap_unordered(download_url, all_links)
+results = ThreadPool(5).imap_unordered(download_url, all_links)
 for r in results:
     print(r)
 
@@ -57,6 +58,6 @@ if os.path.exists(out_dir):
 
 os.mkdir(out_dir)
 
-results = ThreadPool(3).imap_unordered(download_url, all_links)
+results = ThreadPool(5).imap_unordered(download_url, all_links)
 for r in results:
     print(r)

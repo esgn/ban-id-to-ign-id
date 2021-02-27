@@ -12,12 +12,13 @@ services:
         environment:
             - POSTGRES_USER=adr
             - POSTGRES_PASSWORD=$PASSWORD
+        #ports:
+        #    - "5432:5432"
         volumes:
             - postgis-data:/var/lib/postgresql/data
             - ./scripts:/tmp/scripts
-            - ./housenumber-id-ign:/tmp/housenumber-id-ign
-            - ./ban:/tmp/ban
-        restart: always
+            - ./ban-ign-id:/tmp/ban-ign-id
+        #command: ["postgres", "-c", "log_statement=all"]
         shm_size: 2g
 
     adr-adminer:

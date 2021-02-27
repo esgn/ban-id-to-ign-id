@@ -14,7 +14,13 @@ Un script permettant de télécharger en parallèle les CSV nécessaires doit d'
 
 ```
 	pip install -r requirements.txt
-	python get_csv.py
+	python 01_get_csv.py
+```
+
+Un second script permet de préparer les données.
+
+```
+	python 02_merge_csv.py
 ```
 
 ## Import des données CSV en base de données
@@ -38,10 +44,11 @@ La seule opération de l'API est à ce jour la suivante.
 ```
 	Methode : GET
 	Port : 80 (par défaut, peut être modifié au niveau du docker-compose)
-	URL : /position/cle_interop (ex : /position/73008_1700_00008)
+	URL : /position/cle_interop[] (ex : /position/73008_1700_8 ou /position/73008_1700_8,73008_1700_9,...)
 	Réponse : Ensemble des positions présentes dans les fichiers d'export CSV de la BAN IGN correspondant à la cle_interop utilisée
 	Format de la réponse : GeoJSON
-	Format des erreurs : A terminer. Message texte et code HTTP pour le moment.
+	Format des erreurs : JSON
+	Limite : 500 cle_interop par requête
 ```
 
 Une instance d'[Adminer](https://github.com/vrana/adminer) est également disponible par défaut sur le port 8080 pour gérer la base de données si nécessaire.
@@ -57,3 +64,8 @@ Commencer par éteindre et supprimer le contenu de la base de donnée via la com
 ```
 
 Répéter les opérations ci-dessus pour reconstruire la base de données.
+
+## TODO
+
+- [ ] Mettre à jour le format du GeoJSON avec la RFC 7946
+- [ ] Rajouter autres opérations

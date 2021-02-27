@@ -1,0 +1,7 @@
+S# Get 500 cle_interop
+SELECT lower(cle_interop) 
+FROM ban_ign.ban WHERE lower(cle_interop) IS NOT NULL ORDER BY lower(cle_interop) LIMIT 500;
+
+# Get result as csv line
+SELECT string_agg(lower(b), ',')
+FROM ( SELECT DISTINCT lower(cle_interop) FROM ban_ign.ban WHERE lower(cle_interop) IS NOT NULL ORDER BY lower(cle_interop) LIMIT 500) b;

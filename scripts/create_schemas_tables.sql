@@ -6,7 +6,7 @@ CREATE TABLE ban_ign.ban (
     cle_interop TEXT,
     id_ban_group TEXT,
     id_fantoir TEXT,
-    -- Should be int be errors are present in ban-ign datasets
+    -- Should be int but errors are present in ban-ign datasets
     -- numero INT,
     numero TEXT,
     suffixe TEXT,
@@ -24,10 +24,6 @@ CREATE TABLE ban_ign.ban (
     source TEXT,
     date_der_maj_group DATE,
     date_der_maj_hn DATE,
-    date_der_maj_pos DATE
-);
-
-CREATE TABLE ban_ign.housenumber_id_ign (
-    id_ban_adresse TEXT,
+    date_der_maj_pos DATE,
     id_ign TEXT
 );
